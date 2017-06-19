@@ -17,9 +17,16 @@ public class CarSalesAnalyzerServiceTest {
 
     @Test
     public void getCarCountBy() throws Exception {
-        int bmwCarCount = carSalesAnalyzerService.getCarCountBy("bmw");
+        String file = this.getClass().getResource("used-cars-short.csv").getFile();
+        long carCount = carSalesAnalyzerService.getCarCountBy(file,"Golf");
+        assertEquals(1, carCount);
+    }
 
-        System.out.println(bmwCarCount);
+    @Test
+    public void getCarCountByLarge() throws Exception {
+        String file = this.getClass().getResource("autos.csv").getFile();
+        long carCount = carSalesAnalyzerService.getCarCountBy(file,"BMW");
+        assertEquals(33285, carCount);
     }
 
 }
