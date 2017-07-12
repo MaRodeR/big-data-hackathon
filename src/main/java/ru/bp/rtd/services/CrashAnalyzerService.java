@@ -22,8 +22,6 @@ public class CrashAnalyzerService {
     public long getCrashCount(String file) {
         Dataset<Row> dataset = spark.read()
                 .json(file).select(explode(col("items")).as("item"));
-//        dataset.printSchema();
-//        dataset.show();
 
         Dataset<Row> processedDataSet = dataset.select(
                 col("item.em_moment_date"),

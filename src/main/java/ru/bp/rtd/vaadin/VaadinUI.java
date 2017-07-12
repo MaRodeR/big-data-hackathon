@@ -5,39 +5,47 @@ import com.vaadin.annotations.Theme;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.UI;
-import org.apache.spark.sql.Dataset;
+import com.vaadin.ui.VerticalLayout;
 import org.apache.spark.sql.Row;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.highcharts.HighChart;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
-import java.util.List;
+import java.util.*;
 
 @SpringUI
 @Theme("valo")
 public class VaadinUI extends UI {
 
     @Autowired
-    GBCrashAnalyzerService gbCrashAnalyzerService;
+    private GBCrashAnalyzerService gbCrashAnalyzerService;
+
+    private String carModelsFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/2015_Make_Model.csv").getFile();
+    private String vehiclesFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/Vehicles_2015.csv").getFile();
 
     @Override
     protected void init(VaadinRequest request) {
 
-        List<Row> rows = gbCrashAnalyzerService.getCrashCount("C:/Users/810681/Downloads/MakeModel2015/2015_Make_Model.csv");
+        VerticalLayout layout = new VerticalLayout();
+        layout.addComponent(createMostDangerousCarsChart());
+        layout.addComponent(createCrashesCountByDriversAgeChart());
+
+        setContent(layout);
+    }
+
+    private HighChart createMostDangerousCarsChart() {
+        List<Row> rows = gbCrashAnalyzerService.getMostDangerousCars(carModelsFile);
         String categories = "";
         String series = "";
         for (Row row : rows) {
             String make = row.getString(0);
 
-            if(!"NULL".equalsIgnoreCase(make)) {
+            if (!"NULL".equalsIgnoreCase(make)) {
                 Long year = row.getLong(1);
-                categories = categories + "'" + make + "'" + ",";
-
-                series = series + "{name: '" + make + "', y: " + year + "},";
+                categories += "'" + make + "'" + ",";
+                series += "{name: '" + make + "', y: " + year + "},";
             }
-
         }
-
 
         HighChart chart = new HighChart();
 
@@ -46,12 +54,41 @@ public class VaadinUI extends UI {
                 "    },\n" +
                 "\n" +
                 "    xAxis: {\n" +
-                "        categories: ["+categories+"]" +
+                "        categories: [" + categories + "]" +
                 "    },\n" +
                 "\n" +
-                "    series: [ {name: 'Make', data: ["+series+"]" +
+                "    series: [ {name: 'Make', data: [" + series + "]" +
                 "    }]};");
+        return chart;
+    }
 
-        setContent(chart);
+    private HighChart createCrashesCountByDriversAgeChart() {
+        Map<Integer, Integer> crashesByAge = gbCrashAnalyzerService.getCrashesCountByDriversAge(vehiclesFile);
+
+        ArrayList<Integer> ages = new ArrayList<>(crashesByAge.keySet());
+        Collections.sort(ages);
+
+
+        String categories = "";
+        String series = "";
+
+        for (Integer age : ages) {
+            categories += "'" + age + "+',";
+            series += "{name: '" + age + "+', y: " + crashesByAge.get(age) + "},";
+        }
+
+        HighChart chart = new HighChart();
+
+        chart.setHcjs("var options = { title: {  text: 'Crashes by driver age'}, chart: {\n" +
+                "        type: 'column', " +
+                "    },\n" +
+                "\n" +
+                "    xAxis: {\n" +
+                "        categories: [" + categories + "]" +
+                "    },\n" +
+                "\n" +
+                "    series: [ {name: 'Driver age', data: [" + series + "]" +
+                "    }]};");
+        return chart;
     }
 }
