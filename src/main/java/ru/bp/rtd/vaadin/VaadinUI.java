@@ -2,8 +2,12 @@ package ru.bp.rtd.vaadin;
 
 
 import com.vaadin.annotations.Theme;
+import com.vaadin.annotations.Widgetset;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
+import com.vaadin.tapio.googlemaps.GoogleMap;
+import com.vaadin.tapio.googlemaps.client.LatLon;
+import com.vaadin.ui.TabSheet;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
 import org.apache.spark.sql.Row;
@@ -11,7 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.highcharts.HighChart;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 @SpringUI
 @Theme("valo")
@@ -26,11 +33,27 @@ public class VaadinUI extends UI {
     @Override
     protected void init(VaadinRequest request) {
 
-        VerticalLayout layout = new VerticalLayout();
-        layout.addComponent(createMostDangerousCarsChart());
-        layout.addComponent(createCrashesCountByDriversAgeChart());
+        TabSheet tabSheet = new TabSheet();
+        tabSheet.setSizeFull();
 
-        setContent(layout);
+        VerticalLayout chartLayout = new VerticalLayout();
+        chartLayout.addComponent(createMostDangerousCarsChart());
+        chartLayout.addComponent(createCrashesCountByDriversAgeChart());
+        tabSheet.addTab(chartLayout, "charts");
+
+        VerticalLayout mapLayout = new VerticalLayout();
+        mapLayout.setSizeFull();
+
+        GoogleMap googleMap = new GoogleMap(null, null, null);
+        googleMap.setCenter(new LatLon(51.478565, -0.181239));
+        googleMap.setZoom(10);
+        googleMap.setSizeFull();
+        mapLayout.addComponent(googleMap);
+
+        tabSheet.addTab(mapLayout, "map");
+
+
+        setContent(tabSheet);
     }
 
     private HighChart createMostDangerousCarsChart() {
