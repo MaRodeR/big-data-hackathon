@@ -5,6 +5,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import scala.Tuple2;
 
@@ -19,6 +20,7 @@ public class GBCrashAnalyzerService {
     @Autowired
     private SparkSession spark;
 
+    @Cacheable("mostDangerousCars")
     public List<Row> getMostDangerousCars(String file) {
         Dataset<Row> dataset = spark.read()
                 .option("header", "true")
@@ -29,6 +31,7 @@ public class GBCrashAnalyzerService {
     }
 
 
+    @Cacheable("crashesCountByDriversAge")
     public Map<Integer, Integer> getCrashesCountByDriversAge(String vehiclesFile) {
         Dataset<Row> dataset = spark.read()
                 .option("header", "true")
