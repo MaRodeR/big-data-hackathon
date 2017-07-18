@@ -3,13 +3,13 @@ package ru.bp.rtd.vaadin;
 
 import com.vaadin.annotations.Theme;
 import com.vaadin.annotations.Widgetset;
+import com.vaadin.server.Sizeable;
 import com.vaadin.server.VaadinRequest;
+import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.tapio.googlemaps.GoogleMap;
 import com.vaadin.tapio.googlemaps.client.LatLon;
-import com.vaadin.ui.TabSheet;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.*;
 import org.apache.spark.sql.Row;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.highcharts.HighChart;
@@ -41,17 +41,7 @@ public class VaadinUI extends UI {
         chartLayout.addComponent(createCrashesCountByDriversAgeChart());
         tabSheet.addTab(chartLayout, "charts");
 
-        VerticalLayout mapLayout = new VerticalLayout();
-        mapLayout.setSizeFull();
-
-        GoogleMap googleMap = new GoogleMap(null, null, null);
-        googleMap.setCenter(new LatLon(51.478565, -0.181239));
-        googleMap.setZoom(10);
-        googleMap.setSizeFull();
-        mapLayout.addComponent(googleMap);
-
-        tabSheet.addTab(mapLayout, "map");
-
+        tabSheet.addTab(new CrashMapComponent(), "map");
 
         setContent(tabSheet);
     }
