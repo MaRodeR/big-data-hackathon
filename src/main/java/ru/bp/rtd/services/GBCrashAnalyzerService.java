@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import ru.bp.rtd.domain.CarCrash;
 import scala.Tuple2;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.apache.spark.sql.functions.*;
+import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.desc;
 
 @Service
 public class GBCrashAnalyzerService {
@@ -46,14 +46,19 @@ public class GBCrashAnalyzerService {
     public List<CarCrash> getCrashesByHourOfDay(String accidentsFile, int hour) {
         String hourValue = (hour < 10 ? "0" : "") + String.valueOf(hour);
 
-        List<Row> rows = getDataSetByCsv(accidentsFile)
+        Dataset<Row> dataSet = getDataSetByCsv(accidentsFile);
+        dataSet.printSchema();
+        dataSet.show(10);
+        List<Row> rows = dataSet
                 .filter(col("Time").startsWith(hourValue))
                 .limit(100).collectAsList();
+
 
         return rows.stream().map(row -> new CarCrash()
                 .setId(row.getString(0))
                 .setLongitude(row.getDouble(3))
-                .setLatitude(row.getDouble(4)))
+                .setLatitude(row.getDouble(4))
+                .setPoliceOfficerAttendance(row.getInt(30)))
                 .collect(Collectors.toList());
     }
 

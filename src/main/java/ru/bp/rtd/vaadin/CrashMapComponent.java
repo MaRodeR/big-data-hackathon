@@ -60,6 +60,7 @@ public class CrashMapComponent extends VerticalLayout {
     private static GoogleMapMarker createCrashMarker(CarCrash carCrash) {
         return new GoogleMapMarker(carCrash.getId(),
                 new LatLon(carCrash.getLatitude(), carCrash.getLongitude()),
-                false);
+                false, (carCrash.isPoliceForce() == 1) ? "https://cdn0.iconfinder.com/data/icons/transport-filled-outline/2048/338_-_Police_Car-32.png" : "https://cdn0.iconfinder.com/data/icons/car-crash/500/accident-32.png");
     }
+
 }

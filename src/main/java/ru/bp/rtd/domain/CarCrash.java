@@ -7,6 +7,7 @@ public class CarCrash implements Serializable {
     private String id;
     private double latitude;
     private double longitude;
+    private int policeOfficerAttendance;
 
     public String getId() {
         return id;
@@ -32,6 +33,15 @@ public class CarCrash implements Serializable {
 
     public CarCrash setLongitude(double longitude) {
         this.longitude = longitude;
+        return this;
+    }
+
+    public int isPoliceForce() {
+        return policeOfficerAttendance;
+    }
+
+    public CarCrash setPoliceOfficerAttendance(int policeOfficerAttendance) {
+        this.policeOfficerAttendance = policeOfficerAttendance;
         return this;
     }
 }
