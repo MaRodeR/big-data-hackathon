@@ -2,13 +2,8 @@ package ru.bp.rtd.vaadin;
 
 
 import com.vaadin.annotations.Theme;
-import com.vaadin.annotations.Widgetset;
-import com.vaadin.server.Sizeable;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.spring.annotation.SpringUI;
-import com.vaadin.tapio.googlemaps.GoogleMap;
-import com.vaadin.tapio.googlemaps.client.LatLon;
 import com.vaadin.ui.*;
 import org.apache.spark.sql.Row;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,8 +22,9 @@ public class VaadinUI extends UI {
     @Autowired
     private GBCrashAnalyzerService gbCrashAnalyzerService;
 
-    private String carModelsFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/2015_Make_Model.csv").getFile();
-    private String vehiclesFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/Vehicles_2015.csv").getFile();
+    private final String carModelsFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/2015_Make_Model.csv").getFile();
+    private final String vehiclesFile = this.getClass().getClassLoader().getResource("samples/crashes/gb/Vehicles_2015.csv").getFile();
+    private final String accidentsFilePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/Accidents_2015.csv").getFile();
 
     @Override
     protected void init(VaadinRequest request) {
@@ -41,7 +37,7 @@ public class VaadinUI extends UI {
         chartLayout.addComponent(createCrashesCountByDriversAgeChart());
         tabSheet.addTab(chartLayout, "charts");
 
-        tabSheet.addTab(new CrashMapComponent(), "map");
+        tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
 
         setContent(tabSheet);
     }
