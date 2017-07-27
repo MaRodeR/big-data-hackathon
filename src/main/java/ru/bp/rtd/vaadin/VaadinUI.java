@@ -38,6 +38,7 @@ public class VaadinUI extends UI {
         tabSheet.addTab(chartLayout, "charts");
 
         tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
+        tabSheet.addTab(new CrashGroupMapComponent(gbCrashAnalyzerService, accidentsFilePath), "crash groups");
 
         setContent(tabSheet);
     }

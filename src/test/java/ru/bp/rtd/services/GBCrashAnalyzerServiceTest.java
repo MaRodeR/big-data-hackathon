@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import ru.bp.rtd.domain.CarCrash;
+import ru.bp.rtd.domain.CrashGroup;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +60,13 @@ public class GBCrashAnalyzerServiceTest {
         assertEquals(3, crashes.size());
         List<String> crashesIds = crashes.stream().map(CarCrash::getId).collect(toList());
         assertTrue(crashesIds.containsAll(Arrays.asList("201501BS70039", "201501BS70175", "201501BS70189")));
+    }
+
+    @Test
+    public void getGroupCrashesByHourOfDay() throws Exception {
+        String filePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/short/2015_Accidents_short.csv").getFile();
+        List<CrashGroup> groupCrashes = crashAnalyzerService.getGroupCrashesByHourOfDay(filePath, 8);
+        assertNotNull(groupCrashes);
     }
 
 }
