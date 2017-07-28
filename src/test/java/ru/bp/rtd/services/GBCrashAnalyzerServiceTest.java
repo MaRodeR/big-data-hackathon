@@ -25,19 +25,29 @@ import static org.junit.Assert.assertTrue;
 @SpringBootTest
 public class GBCrashAnalyzerServiceTest {
 
+    public static final String MAKE_MODEL_SAMPLE = "samples/crashes/gb/short/2015_Make_Model_short.csv";
+    public static final String VEHICLES_SAMPLE = "samples/crashes/gb/short/2015_Vehicles_short.csv";
+    public static final String ACCIDENTS_SAMPLE = "samples/crashes/gb/short/2015_Accidents_short.csv";
     @Autowired
     private GBCrashAnalyzerService crashAnalyzerService;
 
     @Test
     public void getMostDangerousCars() throws Exception {
-        String filePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/short/2015_Make_Model_short.csv").getFile();
-        List<Row> maxDangerousCarModels = crashAnalyzerService.getMostDangerousCars(filePath);
+        String filePath = getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile();
+        List<Row> maxDangerousCarModels = crashAnalyzerService.getMostDangerousCars(filePath, 10);
         assertEquals(10, maxDangerousCarModels.size());
     }
 
     @Test
+    public void getMostDangerousCarsUnlimited() throws Exception {
+        String filePath = this.getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile();
+        List<Row> maxDangerousCarModels = crashAnalyzerService.getMostDangerousCars(filePath, 10000);
+        assertEquals(38, maxDangerousCarModels.size());
+    }
+
+    @Test
     public void getCrashesCountByDriversAge() throws Exception {
-        String filePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/short/2015_Vehicles_short.csv").getFile();
+        String filePath = this.getClass().getClassLoader().getResource(VEHICLES_SAMPLE).getFile();
         Map<Integer, Integer> result = crashAnalyzerService.getCrashesCountByDriversAge(filePath);
         assertEquals(result.keySet().size(), 10);
         assertEquals(result.get(0), valueOf(1));
@@ -54,7 +64,7 @@ public class GBCrashAnalyzerServiceTest {
 
     @Test
     public void getCrashesByHourOfDay() throws Exception {
-        String filePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/short/2015_Accidents_short.csv").getFile();
+        String filePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
         List<CarCrash> crashes = crashAnalyzerService.getCrashesByHourOfDay(filePath, 0);
         assertNotNull(crashes);
         assertEquals(3, crashes.size());
@@ -64,9 +74,23 @@ public class GBCrashAnalyzerServiceTest {
 
     @Test
     public void getGroupCrashesByHourOfDay() throws Exception {
-        String filePath = this.getClass().getClassLoader().getResource("samples/crashes/gb/short/2015_Accidents_short.csv").getFile();
+        String filePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
         List<CrashGroup> groupCrashes = crashAnalyzerService.getGroupCrashesByHourOfDay(filePath, 8);
         assertNotNull(groupCrashes);
+    }
+
+    @Test
+    public void getCrashesCountByCarMake(){
+        String filePath = getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile();
+        long crashesByCarMake = crashAnalyzerService.getCrashesCountByCarMake(filePath, "BMW");
+        assertEquals(8, crashesByCarMake);
+    }
+
+    @Test
+    public void printSchemas(){
+        crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile());
+        crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(VEHICLES_SAMPLE).getFile());
+        crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile());
     }
 
 }

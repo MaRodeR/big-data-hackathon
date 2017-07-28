@@ -2,9 +2,8 @@ package ru.bp.rtd.services;
 
 
 import org.apache.parquet.it.unimi.dsi.fastutil.longs.LongComparator;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
+import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.sql.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -28,10 +27,20 @@ public class GBCrashAnalyzerService {
     private SparkSession spark;
 
     @Cacheable("mostDangerousCars")
-    public List<Row> getMostDangerousCars(String file) {
+    public List<Row> getMostDangerousCars(String file, int limit) {
         Dataset<Row> dataset = getDataSetByCsv(file);
         dataset.printSchema();
-        return dataset.groupBy(col("make")).count().orderBy(desc("count")).limit(10).collectAsList();
+        return dataset.groupBy(col("make")).count().orderBy(desc("count")).limit(limit).collectAsList();
+    }
+
+    @Cacheable("crashesCountByCarMake")
+    public long getCrashesCountByCarMake(String file, String make) {
+        Dataset<Row> dataset = getDataSetByCsv(file);
+        dataset.printSchema();
+
+        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%"+ make +"%"));
+        makeCrashes.show();
+        return makeCrashes.count();
     }
 
 
@@ -121,11 +130,32 @@ public class GBCrashAnalyzerService {
         }).collect(toList());
     }
 
+    public void loadAndPrint(String file){
+        Dataset<Row> rows = getDataSetByCsv(file);
+        rows.printSchema();
+        rows.show(5);
+    }
+
     private Dataset<Row> getDataSetByCsv(String accidentsFile) {
         return spark.read()
                 .option("header", "true")
                 .option("inferSchema", "true")
                 .csv(accidentsFile);
+    }
+
+    public List<String> getMake(String file) {
+        Dataset<Row> dataset = spark.read()
+                .option("header", "true")
+                .option("inferSchema", "true")
+                .csv(file);
+        dataset.printSchema();
+
+        Encoder<String> stringEncoder = Encoders.STRING();
+        Dataset<String> makes = dataset
+                .select(col("make"))
+                .distinct()
+                .map((MapFunction<Row, String>) row -> row.getString(0).trim(), stringEncoder);
+        return makes.collectAsList();
     }
 
 }
