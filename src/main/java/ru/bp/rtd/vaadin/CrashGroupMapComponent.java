@@ -62,6 +62,9 @@ public class CrashGroupMapComponent extends VerticalLayout {
     private static Component createCrashGroupComponent(CrashGroup crashGroup) {
         LCircle circle = new LCircle(crashGroup.getCenterLatitude(), crashGroup.getCenterLongitude(), crashGroup.getRadius());
         circle.setColor("#F03730");
+        circle.setFillColor("#F03730");
+        circle.setOpacity(0.3);
+        circle.setFillOpacity(0.4);
         return circle;
     }
 
