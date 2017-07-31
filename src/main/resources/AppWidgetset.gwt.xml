@@ -5,4 +5,7 @@
     <inherits name="com.vaadin.DefaultWidgetSet"/>
 
     <inherits name="com.vaadin.tapio.googlemaps.Widgetset" />
+    <inherits name="org.peimari.gleaflet.GLeaflet"/>
+
+    <inherits name="org.vaadin.addon.leaflet.Widgetset" />
 </module>

@@ -5,6 +5,7 @@ public class CrashGroup {
     private long crashCount;
     private double centerLatitude;
     private double centerLongitude;
+    private double radius;
 
     public long getCrashCount() {
         return crashCount;
@@ -30,6 +31,15 @@ public class CrashGroup {
 
     public CrashGroup setCenterLongitude(double centerLongitude) {
         this.centerLongitude = centerLongitude;
+        return this;
+    }
+
+    public double getRadius() {
+        return radius;
+    }
+
+    public CrashGroup setRadius(double radius) {
+        this.radius = radius;
         return this;
     }
 }

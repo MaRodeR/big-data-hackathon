@@ -14,6 +14,7 @@ import scala.Tuple2;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -38,7 +39,7 @@ public class GBCrashAnalyzerService {
         Dataset<Row> dataset = getDataSetByCsv(file);
         dataset.printSchema();
 
-        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%"+ make +"%"));
+        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%" + make + "%"));
         makeCrashes.show();
         return makeCrashes.count();
     }
@@ -75,7 +76,7 @@ public class GBCrashAnalyzerService {
                 .collect(toList());
     }
 
-//    @Cacheable("groupCrashesByHourOfDay")
+    @Cacheable("groupCrashesByHourOfDay")
     public List<CrashGroup> getGroupCrashesByHourOfDay(String accidentsFile, int hour) {
         String hourValue = (hour < 10 ? "0" : "") + String.valueOf(hour);
 
@@ -84,6 +85,8 @@ public class GBCrashAnalyzerService {
         dataSet.show(10);
         List<Row> rows = dataSet
                 .filter(col("Time").startsWith(hourValue))
+                .filter(col("Longitude").isNotNull())
+                .filter(col("Latitude").isNotNull())
                 .collectAsList();
 
 
@@ -93,7 +96,7 @@ public class GBCrashAnalyzerService {
                 .setLatitude(row.getDouble(4)))
                 .collect(toList());
 
-        double maxDistance = 1;
+        double maxDistance = 80000;
         List<List<CarCrash>> crashLists = new ArrayList<>();
         crashes.forEach(crash -> {
             List<List<CarCrash>> nearCrashLists = crashLists.parallelStream().filter(crashList ->
@@ -123,14 +126,22 @@ public class GBCrashAnalyzerService {
             Double minLongitude = crashList.stream().map(CarCrash::getLongitude).min(Double::compareTo).get();
             Double avgLongitude = (maxLongitude + minLongitude) / 2;
 
+            Double radius = Stream.of(
+                    PointUtils.getDistance(avgLatutude, avgLongitude, maxLatitude, avgLongitude),
+                    PointUtils.getDistance(avgLatutude, avgLongitude, minLatitude, avgLongitude),
+                    PointUtils.getDistance(avgLatutude, avgLongitude, avgLatutude, maxLongitude),
+                    PointUtils.getDistance(avgLatutude, avgLongitude, avgLatutude, minLongitude)
+            ).reduce((first, second) -> (first + second) / 2).get();
+
             return new CrashGroup()
                     .setCrashCount(crashList.size())
                     .setCenterLatitude(avgLatutude)
-                    .setCenterLongitude(avgLongitude);
+                    .setCenterLongitude(avgLongitude)
+                    .setRadius(radius);
         }).collect(toList());
     }
 
-    public void loadAndPrint(String file){
+    public void loadAndPrint(String file) {
         Dataset<Row> rows = getDataSetByCsv(file);
         rows.printSchema();
         rows.show(5);
