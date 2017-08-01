@@ -13,10 +13,7 @@ import org.vaadin.highcharts.HighChart;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @SpringUI
 @Theme("valo")
@@ -39,6 +36,19 @@ public class VaadinUI extends UI {
         chartLayout.addComponent(createMostDangerousCarsChart());
         chartLayout.addComponent(createCrashesCountByDriversAgeChart());
 
+        HorizontalLayout vsLayout = getVSComponents();
+
+        tabSheet.addTab(chartLayout, "charts");
+        tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
+        tabSheet.addTab(new CrashGroupMapComponent(gbCrashAnalyzerService, accidentsFilePath), "crash groups");
+        tabSheet.addTab(vsLayout, "VS battle");
+        tabSheet.addTab(getPieComponents(), "Pie");
+
+        setContent(tabSheet);
+
+    }
+
+    private HorizontalLayout getVSComponents() {
         List<String> makes = gbCrashAnalyzerService.getMake(carModelsFile);
         VerticalLayout leftVLayout = new VerticalLayout();
         VerticalLayout rightVLayout = new VerticalLayout();
@@ -56,6 +66,8 @@ public class VaadinUI extends UI {
         comboBoxRight.setItems(makes);
 
         comboBoxRight.addSelectionListener(singleSelectionEvent -> {
+            rightVLayout.removeAllComponents();
+            rightVLayout.addComponent(comboBoxRight);
             HighChart rightChart = createCrashesCountByMakeChart(singleSelectionEvent.getValue());
             rightVLayout.addComponent(rightChart);
         });
@@ -69,16 +81,98 @@ public class VaadinUI extends UI {
         horizontalLayout.addComponent(leftVLayout);
         horizontalLayout.addComponent(vsImage);
         horizontalLayout.addComponent(rightVLayout);
+        return horizontalLayout;
+    }
+
+    private VerticalLayout getPieComponents() {
+        VerticalLayout verticalLayout = new VerticalLayout();
+
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        horizontalLayout.setWidth("100%");
 
 
-        tabSheet.addTab(chartLayout, "charts");
-        tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
-        tabSheet.addTab(new CrashGroupMapComponent(gbCrashAnalyzerService, accidentsFilePath), "crash groups");
-        tabSheet.addTab(horizontalLayout, "VS battle");
+        Map<Integer, String> pointOfImpactMapping = new HashMap<>();
 
-        setContent(tabSheet);
+        pointOfImpactMapping.put(0, "Did not impact");
+
+        pointOfImpactMapping.put(1, "Front");
+        pointOfImpactMapping.put(2, "Back");
+        pointOfImpactMapping.put(3, "Offside");
+        pointOfImpactMapping.put(4, "Nearside");
+
+        HighChart chartMale = getPieMaleFemaleChart(1, 12, pointOfImpactMapping, "1st point of impact - Male");
+        horizontalLayout.addComponent(chartMale);
+        HighChart chartFemale = getPieMaleFemaleChart(2, 12, pointOfImpactMapping, "1st point of impact - Female");
+        horizontalLayout.addComponent(chartFemale);
+        verticalLayout.addComponent(horizontalLayout);
+
+        Map<Integer, String> overturningMapping = new HashMap<>();
+        overturningMapping.put(0, "None");
+        overturningMapping.put(1, "Skidded");
+        overturningMapping.put(2, "Skidded and overturned");
+        overturningMapping.put(3, "Jackknifed");
+        overturningMapping.put(4, "Jackknifed and overturned");
+        overturningMapping.put(5, "Overturned");
+
+        HorizontalLayout overturningLayout = new HorizontalLayout();
+        HighChart chartOverMale = getPieMaleFemaleChart(1, 8, overturningMapping, "Overturning and Skidding - Male");
+        overturningLayout.addComponent(chartOverMale);
+        HighChart chartOverFemale = getPieMaleFemaleChart(2, 8, overturningMapping, "Overturning and Skidding - Female");
+        overturningLayout.addComponent(chartOverFemale);
+        verticalLayout.addComponent(overturningLayout);
+
+
+
+        return  verticalLayout;
 
     }
+
+    private HighChart getPieMaleFemaleChart(int value, int descriminatorColumnNumber, Map<Integer, String> mapping, String pieTitle) {
+        HighChart chart = new HighChart();
+        StringBuilder result = new StringBuilder();
+
+
+        Map<Integer, Integer> crashes = gbCrashAnalyzerService.getMaleFemaleStats(carModelsFile, value, descriminatorColumnNumber);
+        for (Integer pointOfImpact : crashes.keySet()) {
+            result.append("['"+mapping.get(pointOfImpact) + "', "+ crashes.get(pointOfImpact) +"],");
+        }
+
+        chart.setHcjs("var options = {\n" +
+                "    chart: {\n" +
+                "        type: 'pie',\n" +
+                "        options3d: {\n" +
+                "            enabled: true,\n" +
+                "            alpha: 45,\n" +
+                "            beta: 0\n" +
+                "        }\n" +
+                "    },\n" +
+                "    title: {\n" +
+                "        text: '"+ pieTitle +"' \n" +
+                "    },\n" +
+                "    tooltip: {\n" +
+                "        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'\n" +
+                "    },\n" +
+                "    plotOptions: {\n" +
+                "        pie: {\n" +
+                "            allowPointSelect: true,\n" +
+                "            cursor: 'pointer',\n" +
+                "            depth: 35,\n" +
+                "            dataLabels: {\n" +
+                "                enabled: true,\n" +
+                "                format: '{point.name}'\n" +
+                "            }\n" +
+                "        }\n" +
+                "    },\n" +
+                "    series: [{\n" +
+                "        type: 'pie',\n" +
+                "        name: 'Browser share',\n" +
+                "        data: [\n" + result.toString()+
+                "        ]\n" +
+                "    }]\n" +
+                "};");
+        return chart;
+    }
+
 
     private HighChart createMostDangerousCarsChart() {
         List<Row> rows = gbCrashAnalyzerService.getMostDangerousCars(carModelsFile, 10);

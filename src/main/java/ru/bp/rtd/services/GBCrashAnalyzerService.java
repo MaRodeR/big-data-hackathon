@@ -1,7 +1,6 @@
 package ru.bp.rtd.services;
 
 
-import org.apache.parquet.it.unimi.dsi.fastutil.longs.LongComparator;
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +11,10 @@ import ru.bp.rtd.domain.CrashGroup;
 import ru.bp.rtd.utils.PointUtils;
 import scala.Tuple2;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
@@ -39,7 +40,7 @@ public class GBCrashAnalyzerService {
         Dataset<Row> dataset = getDataSetByCsv(file);
         dataset.printSchema();
 
-        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%" + make + "%"));
+        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%"+ make +"%"));
         makeCrashes.show();
         return makeCrashes.count();
     }
@@ -57,22 +58,23 @@ public class GBCrashAnalyzerService {
     }
 
     @Cacheable("crashesByHourOfDay")
-    public List<CarCrash> getCrashesByHourOfDay(String accidentsFile, int hour) {
+    public List<CarCrash> getCrashesByHourOfDay(String accidentsFile, int hour, Integer severity) {
         String hourValue = (hour < 10 ? "0" : "") + String.valueOf(hour);
 
         Dataset<Row> dataSet = getDataSetByCsv(accidentsFile);
         dataSet.printSchema();
         dataSet.show(10);
         List<Row> rows = dataSet
-                .filter(col("Time").startsWith(hourValue))
-                .limit(100).collectAsList();
+                .filter(col("Time").startsWith(hourValue)).filter(col("Accident_Severity").equalTo(severity))
+                .collectAsList();
 
 
         return rows.stream().map(row -> new CarCrash()
                 .setId(row.getString(0))
                 .setLongitude(row.getDouble(3))
                 .setLatitude(row.getDouble(4))
-                .setPoliceOfficerAttendance(row.getInt(30)))
+                .setPoliceOfficerAttendance(row.getInt(30))
+                .setSeverity(row.getInt(6)))
                 .collect(toList());
     }
 
@@ -139,6 +141,16 @@ public class GBCrashAnalyzerService {
                     .setCenterLongitude(avgLongitude)
                     .setRadius(radius);
         }).collect(toList());
+    }
+
+    @Cacheable("getMaleFemaleStats")
+    public Map<Integer, Integer> getMaleFemaleStats(String vehiclesFile, int value, int discriminatorColumnNumber) {
+        Dataset<Row> dataset = getDataSetByCsv(vehiclesFile);
+        dataset.printSchema();
+        Dataset<Row> femaleRows = dataset.filter(col("Sex_of_Driver").equalTo(value)).filter(row -> row.getInt(discriminatorColumnNumber) >= 0);//.filter(col("Skidding_and_Overturning").equalTo(5));
+
+        return femaleRows.toJavaRDD().mapToPair(female-> new Tuple2<>(female.getInt(discriminatorColumnNumber),1)).
+                reduceByKey((a,b)-> a+b).collectAsMap();
     }
 
     public void loadAndPrint(String file) {

@@ -13,7 +13,6 @@ import ru.bp.rtd.domain.CrashGroup;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.lang.Integer.valueOf;
 import static java.util.stream.Collectors.toList;
@@ -65,7 +64,7 @@ public class GBCrashAnalyzerServiceTest {
     @Test
     public void getCrashesByHourOfDay() throws Exception {
         String filePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
-        List<CarCrash> crashes = crashAnalyzerService.getCrashesByHourOfDay(filePath, 0);
+        List<CarCrash> crashes = crashAnalyzerService.getCrashesByHourOfDay(filePath, 0, 3);
         assertNotNull(crashes);
         assertEquals(3, crashes.size());
         List<String> crashesIds = crashes.stream().map(CarCrash::getId).collect(toList());
@@ -91,6 +90,14 @@ public class GBCrashAnalyzerServiceTest {
         crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile());
         crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(VEHICLES_SAMPLE).getFile());
         crashAnalyzerService.loadAndPrint(this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile());
+    }
+
+    @Test
+    public void testMaleFemale(){
+        String filePath = getClass().getClassLoader().getResource(MAKE_MODEL_SAMPLE).getFile();
+
+//        Map<Integer, Integer> sexCrashes =  crashAnalyzerService.getMaleFemaleStats(filePath, 1);
+//      assertNotNull(sexCrashes);
     }
 
 }
