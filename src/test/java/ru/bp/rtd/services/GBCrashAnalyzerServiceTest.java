@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import ru.bp.rtd.domain.CarCrash;
 import ru.bp.rtd.domain.CrashGroup;
+import ru.bp.rtd.domain.Point;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +75,8 @@ public class GBCrashAnalyzerServiceTest {
     @Test
     public void getGroupCrashesByHourOfDay() throws Exception {
         String filePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
-        List<CrashGroup> groupCrashes = crashAnalyzerService.getGroupCrashesByHourOfDay(filePath, 8);
+        List<CrashGroup> groupCrashes = crashAnalyzerService.getGroupCrashesByHourOfDay(
+                filePath, 8, 80000, new Point(-0.208838, 50.491836), new Point(-0.018838, 52.491836));
         assertNotNull(groupCrashes);
     }
 

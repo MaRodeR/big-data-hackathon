@@ -3,10 +3,9 @@ package ru.bp.rtd.vaadin;
 import com.vaadin.data.HasValue;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.*;
-import org.vaadin.addon.leaflet.LCircle;
-import org.vaadin.addon.leaflet.LMap;
-import org.vaadin.addon.leaflet.LOpenStreetMapLayer;
+import org.vaadin.addon.leaflet.*;
 import ru.bp.rtd.domain.CrashGroup;
+import ru.bp.rtd.domain.Point;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
 import java.util.ArrayList;
@@ -18,6 +17,7 @@ public class CrashGroupMapComponent extends VerticalLayout {
     private String accidentsFilePath;
 
     private final LMap map;
+    private final Slider hourSlider;
     private List<Component> crashGroupComponents = new ArrayList<>();
 
     public CrashGroupMapComponent(GBCrashAnalyzerService gbCrashAnalyzerService, String accidentsFilePath) {
@@ -39,20 +39,15 @@ public class CrashGroupMapComponent extends VerticalLayout {
         parametersPanel.setDefaultComponentAlignment(Alignment.MIDDLE_LEFT);
         parametersPanel.addComponent(new Label("time"));
         parametersPanel.setMargin(new MarginInfo(false, true));
-        Slider slider = new Slider(0, 23);
-        slider.setWidth("200px");
-        slider.addValueChangeListener((HasValue.ValueChangeListener<Double>) event -> {
-            int hourValue = event.getValue().intValue();
-            List<CrashGroup> crashGroups = this.gbCrashAnalyzerService.getGroupCrashesByHourOfDay(this.accidentsFilePath, hourValue);
-            crashGroupComponents.forEach(map::removeComponent);
-            crashGroupComponents.clear();
-            crashGroups.stream().map(CrashGroupMapComponent::createCrashGroupComponent).forEach(component -> {
-                map.addComponent(component);
-                crashGroupComponents.add(component);
-            });
-        });
 
-        parametersPanel.addComponent(slider);
+        hourSlider = new Slider(-1, 23);
+        hourSlider.setValue(-1D);
+        hourSlider.setWidth("200px");
+        hourSlider.addValueChangeListener((HasValue.ValueChangeListener<Double>) event -> updateGroupCrashes());
+
+        map.addMoveEndListener(event -> updateGroupCrashes());
+
+        parametersPanel.addComponent(hourSlider);
         addComponent(parametersPanel);
 
         addComponent(map);
@@ -66,6 +61,33 @@ public class CrashGroupMapComponent extends VerticalLayout {
         circle.setOpacity(0.3);
         circle.setFillOpacity(0.4);
         return circle;
+    }
+
+    private void updateGroupCrashes() {
+        List<CrashGroup> crashGroups = new ArrayList<>();
+        int hour = hourSlider.getValue().intValue();
+        if (hour >= 0) {
+            Double zoomLevel = map.getZoomLevel();
+            double maxDistance = zoomLevel <= 7 ? 80000 : (80000 / ((zoomLevel - 7) * 2));
+
+            Point northEastCorner = null;
+            Point southWestCorner = null;
+
+            if (zoomLevel > 8) {
+                northEastCorner = new Point(map.getBounds().getNorthEastLat(), map.getBounds().getNorthEastLon());
+                southWestCorner = new Point(map.getBounds().getSouthWestLat(), map.getBounds().getSouthWestLon());
+            }
+
+            crashGroups.addAll(this.gbCrashAnalyzerService.getGroupCrashesByHourOfDay(
+                    this.accidentsFilePath, hour, maxDistance, southWestCorner, northEastCorner));
+        }
+
+        crashGroupComponents.forEach(map::removeComponent);
+        crashGroupComponents.clear();
+        crashGroups.stream().map(CrashGroupMapComponent::createCrashGroupComponent).forEach(component -> {
+            map.addComponent(component);
+            crashGroupComponents.add(component);
+        });
     }
 
 }

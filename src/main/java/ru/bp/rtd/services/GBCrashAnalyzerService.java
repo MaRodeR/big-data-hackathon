@@ -8,13 +8,11 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import ru.bp.rtd.domain.CarCrash;
 import ru.bp.rtd.domain.CrashGroup;
+import ru.bp.rtd.domain.Point;
 import ru.bp.rtd.utils.PointUtils;
 import scala.Tuple2;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
@@ -79,17 +77,35 @@ public class GBCrashAnalyzerService {
     }
 
     @Cacheable("groupCrashesByHourOfDay")
-    public List<CrashGroup> getGroupCrashesByHourOfDay(String accidentsFile, int hour) {
+    public List<CrashGroup> getGroupCrashesByHourOfDay(String accidentsFile, int hour, double maxDistance,
+                                                       Point southWestCorner, Point northEastCorner) {
+        System.out.println(String.format("get group crashes for hour: %s max distance: %s coordinate: lat [%s, %s], lon [%s, %s]",
+                hour, maxDistance,
+                southWestCorner != null ? southWestCorner.getLat() : null,
+                northEastCorner != null ? northEastCorner.getLat() : null,
+                southWestCorner != null ? southWestCorner.getLon() : null,
+                northEastCorner != null ? northEastCorner.getLon() : null));
         String hourValue = (hour < 10 ? "0" : "") + String.valueOf(hour);
 
         Dataset<Row> dataSet = getDataSetByCsv(accidentsFile);
         dataSet.printSchema();
         dataSet.show(10);
-        List<Row> rows = dataSet
-                .filter(col("Time").startsWith(hourValue))
-                .filter(col("Longitude").isNotNull())
-                .filter(col("Latitude").isNotNull())
-                .collectAsList();
+        List<Row> rows;
+        if (northEastCorner != null && southWestCorner != null) {
+            rows = dataSet
+                    .filter(col("Time").startsWith(hourValue))
+                    .filter(col("Latitude").isNotNull())
+                    .filter(col("Longitude").isNotNull())
+                    .filter(col("Latitude").between(southWestCorner.getLat(), northEastCorner.getLat()))
+                    .filter(col("Longitude").between(southWestCorner.getLon(), northEastCorner.getLon()))
+                    .collectAsList();
+        } else {
+            rows = dataSet
+                    .filter(col("Time").startsWith(hourValue))
+                    .filter(col("Longitude").isNotNull())
+                    .filter(col("Latitude").isNotNull())
+                    .collectAsList();
+        }
 
 
         List<CarCrash> crashes = rows.stream().map(row -> new CarCrash()
@@ -98,7 +114,6 @@ public class GBCrashAnalyzerService {
                 .setLatitude(row.getDouble(4)))
                 .collect(toList());
 
-        double maxDistance = 80000;
         List<List<CarCrash>> crashLists = new ArrayList<>();
         crashes.forEach(crash -> {
             List<List<CarCrash>> nearCrashLists = crashLists.parallelStream().filter(crashList ->
