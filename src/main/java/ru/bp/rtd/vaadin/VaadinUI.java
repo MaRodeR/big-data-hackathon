@@ -2,7 +2,6 @@ package ru.bp.rtd.vaadin;
 
 
 import com.vaadin.annotations.Theme;
-import com.vaadin.event.selection.SingleSelectionEvent;
 import com.vaadin.event.selection.SingleSelectionListener;
 import com.vaadin.server.*;
 import com.vaadin.spring.annotation.SpringUI;
@@ -12,8 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.highcharts.HighChart;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
-import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SpringUI
 @Theme("valo")
@@ -36,7 +35,7 @@ public class VaadinUI extends UI {
         chartLayout.addComponent(createMostDangerousCarsChart());
         chartLayout.addComponent(createCrashesCountByDriversAgeChart());
 
-        HorizontalLayout vsLayout = getVSComponents();
+        VerticalLayout vsLayout = getVSComponents();
 
         tabSheet.addTab(chartLayout, "charts");
         tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
@@ -48,8 +47,10 @@ public class VaadinUI extends UI {
 
     }
 
-    private HorizontalLayout getVSComponents() {
-        List<String> makes = gbCrashAnalyzerService.getMake(carModelsFile);
+    private VerticalLayout getVSComponents() {
+        VerticalLayout verticalLayout = new VerticalLayout();
+
+        List<String> makes = gbCrashAnalyzerService.getColValue(carModelsFile, "make");
         VerticalLayout leftVLayout = new VerticalLayout();
         VerticalLayout rightVLayout = new VerticalLayout();
 
@@ -81,7 +82,25 @@ public class VaadinUI extends UI {
         horizontalLayout.addComponent(leftVLayout);
         horizontalLayout.addComponent(vsImage);
         horizontalLayout.addComponent(rightVLayout);
-        return horizontalLayout;
+
+
+        verticalLayout.addComponent(horizontalLayout);
+
+
+        HorizontalLayout vsAgeOfCarHorizontalLayout = new HorizontalLayout();
+        VerticalLayout leftAgeOfCarVLayout = new VerticalLayout();
+        List<Integer> ages = gbCrashAnalyzerService.getIntColValue(carModelsFile, "Age_of_Vehicle");
+
+         Collections.sort(ages);
+        ComboBox<Integer> comboBoxLeftAgeOfCars = new ComboBox<>();
+        comboBoxLeftAgeOfCars.setItems(ages);
+
+        leftAgeOfCarVLayout.addComponent(comboBoxLeftAgeOfCars);
+        vsAgeOfCarHorizontalLayout.addComponent(leftAgeOfCarVLayout);
+
+        verticalLayout.addComponent(vsAgeOfCarHorizontalLayout);
+
+        return verticalLayout;
     }
 
     private VerticalLayout getPieComponents() {
@@ -115,6 +134,7 @@ public class VaadinUI extends UI {
         overturningMapping.put(5, "Overturned");
 
         HorizontalLayout overturningLayout = new HorizontalLayout();
+        overturningLayout.setWidth("100%");
         HighChart chartOverMale = getPieMaleFemaleChart(1, 8, overturningMapping, "Overturning and Skidding - Male");
         overturningLayout.addComponent(chartOverMale);
         HighChart chartOverFemale = getPieMaleFemaleChart(2, 8, overturningMapping, "Overturning and Skidding - Female");
@@ -122,6 +142,67 @@ public class VaadinUI extends UI {
         verticalLayout.addComponent(overturningLayout);
 
 
+        Map<Integer, String> journeyPurposeMapping = new HashMap<>();
+        journeyPurposeMapping.put(1, "Journey as part of work");
+        journeyPurposeMapping.put(2, "Commuting to/from work");
+        journeyPurposeMapping.put(3, "Taking pupil to/from school");
+        journeyPurposeMapping.put(4, "Pupil riding to/from school");
+        journeyPurposeMapping.put(5, "Other");
+        journeyPurposeMapping.put(6, "Not known");
+
+
+        HorizontalLayout journeyPurposeLayout = new HorizontalLayout();
+        journeyPurposeLayout.setWidth("100%");
+        HighChart chartJourneyMale = getPieMaleFemaleChart(1, 14, journeyPurposeMapping, "Journey purpose - Male");
+        journeyPurposeLayout.addComponent(chartJourneyMale);
+        HighChart chartJourneyFemale = getPieMaleFemaleChart(2, 14, journeyPurposeMapping, "Journey purpose- Female");
+        journeyPurposeLayout.addComponent(chartJourneyFemale);
+        verticalLayout.addComponent(journeyPurposeLayout);
+
+
+        Map<Integer, String> homeAreaMapping = new HashMap<>();
+        homeAreaMapping.put(1, "Urban area");
+        homeAreaMapping.put(2, "Small town");
+        homeAreaMapping.put(3, "Rural");
+
+
+
+        HorizontalLayout homeAreaLayout = new HorizontalLayout();
+        homeAreaLayout.setWidth("100%");
+        HighChart homeAreaMale = getPieMaleFemaleChart(1, 21, homeAreaMapping, "Home Area - Male");
+        homeAreaLayout.addComponent(homeAreaMale);
+        HighChart homeAreaFemale = getPieMaleFemaleChart(2, 21, homeAreaMapping, "Home Area - Female");
+        homeAreaLayout.addComponent(homeAreaFemale);
+        verticalLayout.addComponent(homeAreaLayout);
+
+        Map<Integer, String> vehicleManouvreMapping = new HashMap<>();
+
+        vehicleManouvreMapping.put(	1	,"Reversing");
+        vehicleManouvreMapping.put(	2	,"Parked");
+        vehicleManouvreMapping.put(	3	,"Waiting to go - held up");
+        vehicleManouvreMapping.put(	4	,"Slowing or stopping");
+        vehicleManouvreMapping.put(	5	,"Moving off");
+        vehicleManouvreMapping.put(	6	,"U-turn");
+        vehicleManouvreMapping.put(	7	,"Turning left");
+        vehicleManouvreMapping.put(	8	,"Waiting to turn left");
+        vehicleManouvreMapping.put(	9	,"Turning right");
+        vehicleManouvreMapping.put(	10	,"Waiting to turn right");
+        vehicleManouvreMapping.put(	11	,"Changing lane to left");
+        vehicleManouvreMapping.put(	12	,"Changing lane to right");
+        vehicleManouvreMapping.put(	13	,"Overtaking moving vehicle - offside");
+        vehicleManouvreMapping.put(	14	,"Overtaking static vehicle - offside");
+        vehicleManouvreMapping.put(	15	,"Overtaking - nearside");
+        vehicleManouvreMapping.put(	16	,"Going ahead left-hand bend");
+        vehicleManouvreMapping.put(	17	,"Going ahead right-hand bend");
+        vehicleManouvreMapping.put(	18	,"Going ahead other");
+
+        HorizontalLayout manouvreLayout = new HorizontalLayout();
+        manouvreLayout.setWidth("100%");
+        HighChart manouvreMale = getPieMaleFemaleChart(1, 5, vehicleManouvreMapping, "Vehicle Manouvre - Male");
+        manouvreLayout.addComponent(manouvreMale);
+        HighChart manouvreFemale = getPieMaleFemaleChart(2, 5, vehicleManouvreMapping, "Vehicle Manouvre - Female");
+        manouvreLayout.addComponent(manouvreFemale);
+        verticalLayout.addComponent(manouvreLayout);
 
         return  verticalLayout;
 
@@ -165,7 +246,7 @@ public class VaadinUI extends UI {
                 "    },\n" +
                 "    series: [{\n" +
                 "        type: 'pie',\n" +
-                "        name: 'Browser share',\n" +
+                "        name: 'Percent',\n" +
                 "        data: [\n" + result.toString()+
                 "        ]\n" +
                 "    }]\n" +
@@ -250,7 +331,7 @@ public class VaadinUI extends UI {
                 "\n" +
                 "    xAxis: {\n" +
                 "        categories: [" + categories + "]" +
-                "    },\n" +
+                "    }, yAxis: {min: 0, max: 10000}, " +
                 "\n" +
                 "    series: [ {name: 'Count', data: [" + series + "]" +
                 "    }]};");

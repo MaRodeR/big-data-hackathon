@@ -181,7 +181,7 @@ public class GBCrashAnalyzerService {
                 .csv(accidentsFile);
     }
 
-    public List<String> getMake(String file) {
+    public List<String> getColValue(String file, String columnName) {
         Dataset<Row> dataset = spark.read()
                 .option("header", "true")
                 .option("inferSchema", "true")
@@ -190,10 +190,26 @@ public class GBCrashAnalyzerService {
 
         Encoder<String> stringEncoder = Encoders.STRING();
         Dataset<String> makes = dataset
-                .select(col("make"))
+                .select(col(columnName))
                 .distinct()
-                .map((MapFunction<Row, String>) row -> row.getString(0).trim(), stringEncoder);
+                .map((MapFunction<Row, String>) row -> row.get(0).toString().trim(), stringEncoder);
         return makes.collectAsList();
+    }
+
+
+    public List<Integer> getIntColValue(String file, String columnName) {
+        Dataset<Row> dataset = spark.read()
+                .option("header", "true")
+                .option("inferSchema", "true")
+                .csv(file);
+        dataset.printSchema();
+
+        Encoder<Integer> intEncoder = Encoders.INT();
+        Dataset<Integer> values = dataset
+                .select(col(columnName))
+                .distinct()
+                .map((MapFunction<Row, Integer>) row -> row.getInt(0), intEncoder);
+        return values.collectAsList();
     }
 
 }
