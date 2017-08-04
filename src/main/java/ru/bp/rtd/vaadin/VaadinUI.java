@@ -31,13 +31,9 @@ public class VaadinUI extends UI {
         TabSheet tabSheet = new TabSheet();
         tabSheet.setSizeFull();
 
-        HorizontalLayout chartLayout = new HorizontalLayout();
-        chartLayout.addComponent(createMostDangerousCarsChart());
-        chartLayout.addComponent(createCrashesCountByDriversAgeChart());
-
         VerticalLayout vsLayout = getVSComponents();
 
-        tabSheet.addTab(chartLayout, "charts");
+        tabSheet.addTab(new ChartsTab(gbCrashAnalyzerService, carModelsFile, vehiclesFile), "charts");
         tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
         tabSheet.addTab(new CrashGroupMapComponent(gbCrashAnalyzerService, accidentsFilePath), "crash groups");
         tabSheet.addTab(vsLayout, "VS battle");
@@ -142,7 +138,8 @@ public class VaadinUI extends UI {
         verticalLayout.addComponent(overturningLayout);
 
 
-        Map<Integer, String> journeyPurposeMapping = new HashMap<>();
+
+Map<Integer, String> journeyPurposeMapping = new HashMap<>();
         journeyPurposeMapping.put(1, "Journey as part of work");
         journeyPurposeMapping.put(2, "Commuting to/from work");
         journeyPurposeMapping.put(3, "Taking pupil to/from school");
@@ -202,9 +199,7 @@ public class VaadinUI extends UI {
         manouvreLayout.addComponent(manouvreMale);
         HighChart manouvreFemale = getPieMaleFemaleChart(2, 5, vehicleManouvreMapping, "Vehicle Manouvre - Female");
         manouvreLayout.addComponent(manouvreFemale);
-        verticalLayout.addComponent(manouvreLayout);
-
-        return  verticalLayout;
+        verticalLayout.addComponent(manouvreLayout);        return  verticalLayout;
 
     }
 
@@ -215,7 +210,7 @@ public class VaadinUI extends UI {
 
         Map<Integer, Integer> crashes = gbCrashAnalyzerService.getMaleFemaleStats(carModelsFile, value, descriminatorColumnNumber);
         for (Integer pointOfImpact : crashes.keySet()) {
-            result.append("['"+mapping.get(pointOfImpact) + "', "+ crashes.get(pointOfImpact) +"],");
+            result.append("['" + mapping.get(pointOfImpact) + "', " + crashes.get(pointOfImpact) + "],");
         }
 
         chart.setHcjs("var options = {\n" +
@@ -228,7 +223,7 @@ public class VaadinUI extends UI {
                 "        }\n" +
                 "    },\n" +
                 "    title: {\n" +
-                "        text: '"+ pieTitle +"' \n" +
+                "        text: '" + pieTitle + "' \n" +
                 "    },\n" +
                 "    tooltip: {\n" +
                 "        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>'\n" +
@@ -247,70 +242,10 @@ public class VaadinUI extends UI {
                 "    series: [{\n" +
                 "        type: 'pie',\n" +
                 "        name: 'Percent',\n" +
-                "        data: [\n" + result.toString()+
+                "        data: [\n" + result.toString() +
                 "        ]\n" +
                 "    }]\n" +
                 "};");
-        return chart;
-    }
-
-
-    private HighChart createMostDangerousCarsChart() {
-        List<Row> rows = gbCrashAnalyzerService.getMostDangerousCars(carModelsFile, 10);
-        String categories = "";
-        String series = "";
-        for (Row row : rows) {
-            String make = row.getString(0);
-
-            if (!"NULL".equalsIgnoreCase(make)) {
-                Long year = row.getLong(1);
-                categories += "'" + make + "'" + ",";
-                series += "{name: '" + make + "', y: " + year + "},";
-            }
-        }
-
-        HighChart chart = new HighChart();
-
-        chart.setHcjs("var options = { title: {  text: 'Crashes by make'}, chart: {\n" +
-                "        type: 'column', " +
-                "    },\n" +
-                "\n" +
-                "    xAxis: {\n" +
-                "        categories: [" + categories + "]" +
-                "    },\n" +
-                "\n" +
-                "    series: [ {name: 'Make', data: [" + series + "]" +
-                "    }]};");
-        return chart;
-    }
-
-    private HighChart createCrashesCountByDriversAgeChart() {
-        Map<Integer, Integer> crashesByAge = gbCrashAnalyzerService.getCrashesCountByDriversAge(vehiclesFile);
-
-        ArrayList<Integer> ages = new ArrayList<>(crashesByAge.keySet());
-        Collections.sort(ages);
-
-
-        String categories = "";
-        String series = "";
-
-        for (Integer age : ages) {
-            categories += "'" + age + "+',";
-            series += "{name: '" + age + "+', y: " + crashesByAge.get(age) + "},";
-        }
-
-        HighChart chart = new HighChart();
-
-        chart.setHcjs("var options = { title: {  text: 'Crashes by driver age'}, chart: {\n" +
-                "        type: 'column', " +
-                "    },\n" +
-                "\n" +
-                "    xAxis: {\n" +
-                "        categories: [" + categories + "]" +
-                "    },\n" +
-                "\n" +
-                "    series: [ {name: 'Driver age', data: [" + series + "]" +
-                "    }]};");
         return chart;
     }
 
@@ -320,12 +255,12 @@ public class VaadinUI extends UI {
         String categories = "";
         String series = "";
 
-            categories += "'" + make + "+'";
-            series += "{name: '" + make + "+', y: " + count + "},";
+        categories += "'" + make + "+'";
+        series += "{name: '" + make + "+', y: " + count + "},";
 
         HighChart chart = new HighChart();
 
-        chart.setHcjs("var options = { title: {  text: 'Crashes of "+make+"'}, chart: {\n" +
+        chart.setHcjs("var options = { title: {  text: 'Crashes of " + make + "'}, chart: {\n" +
                 "        type: 'column', " +
                 "    },\n" +
                 "\n" +

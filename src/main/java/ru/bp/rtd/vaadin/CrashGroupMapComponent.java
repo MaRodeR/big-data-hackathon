@@ -32,7 +32,7 @@ public class CrashGroupMapComponent extends VerticalLayout {
         map = new LMap();
         map.setCenter(52.5, -3);
         map.setZoomLevel(7);
-        map.addBaseLayer(new LOpenStreetMapLayer(), "CarCrashes");
+        map.addBaseLayer(new LWmsLayer(), "CarCrashes");
 
         HorizontalLayout parametersPanel = new HorizontalLayout();
         parametersPanel.setHeightUndefined();
