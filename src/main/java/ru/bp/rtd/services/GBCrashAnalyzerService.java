@@ -3,16 +3,20 @@ package ru.bp.rtd.services;
 
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
+import org.apache.spark.sql.types.DataType;
+import org.apache.spark.sql.types.IntegerType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import ru.bp.rtd.domain.CarCrash;
 import ru.bp.rtd.domain.CrashGroup;
 import ru.bp.rtd.domain.Point;
+import ru.bp.rtd.domain.RoadDriverAgeCrash;
 import ru.bp.rtd.utils.PointUtils;
 import scala.Tuple2;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
@@ -22,6 +26,18 @@ import static org.apache.spark.sql.functions.desc;
 
 @Service
 public class GBCrashAnalyzerService {
+
+    private Map<Integer, String> roadTypes = new HashMap<>();
+
+    {
+        roadTypes.put(1, "Roundabout");
+        roadTypes.put(2, "One way street");
+        roadTypes.put(3, "Dual carriageway");
+        roadTypes.put(6, "Single carriageway");
+        roadTypes.put(7, "Slip road");
+        roadTypes.put(9, "Unknown");
+        roadTypes.put(12, "One way street/Slip road");
+    }
 
     @Autowired
     private SparkSession spark;
@@ -38,7 +54,7 @@ public class GBCrashAnalyzerService {
         Dataset<Row> dataset = getDataSetByCsv(file);
         dataset.printSchema();
 
-        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%"+ make +"%"));
+        Dataset<Row> makeCrashes = dataset.filter(col("make").like("%" + make + "%"));
         makeCrashes.show();
         return makeCrashes.count();
     }
@@ -53,6 +69,28 @@ public class GBCrashAnalyzerService {
                 .mapToPair(age -> new Tuple2<>(age, 1))
                 .reduceByKey((a, b) -> a + b)
                 .collectAsMap();
+    }
+
+    @Cacheable("crashesByRoadTypeAndDriverAge")
+    public List<RoadDriverAgeCrash> getCrashesByRoadTypeAndDriverAge(String vehiclesFile, String accidentsFile) {
+        Dataset<Row> vehiclesDataSet = getDataSetByCsv(vehiclesFile);
+        Dataset<Row> accidentsDataSet = getDataSetByCsv(accidentsFile);
+
+
+        List<Row> rows = vehiclesDataSet.join(accidentsDataSet, "Accident_Index")
+                .filter(col("Road_Type").notEqual(-1))
+                .filter(col("Age_of_Driver").notEqual(-1))
+                .select(col("Road_Type"), col("Age_of_Driver").divide(10).cast("int").multiply(10).as("Age_of_Driver"))
+                .groupBy(col("Road_Type"), col("Age_of_Driver"))
+                .count()
+                .collectAsList();
+
+        return rows.stream()
+                .map(row -> new RoadDriverAgeCrash()
+                        .setRoadType(roadTypes.get(row.getInt(0)))
+                        .setAge(row.getInt(1))
+                        .setCrashCount(row.getLong(2)))
+                .collect(Collectors.toList());
     }
 
     @Cacheable("crashesByHourOfDay")
@@ -164,21 +202,14 @@ public class GBCrashAnalyzerService {
         dataset.printSchema();
         Dataset<Row> femaleRows = dataset.filter(col("Sex_of_Driver").equalTo(value)).filter(row -> row.getInt(discriminatorColumnNumber) >= 0);//.filter(col("Skidding_and_Overturning").equalTo(5));
 
-        return femaleRows.toJavaRDD().mapToPair(female-> new Tuple2<>(female.getInt(discriminatorColumnNumber),1)).
-                reduceByKey((a,b)-> a+b).collectAsMap();
+        return femaleRows.toJavaRDD().mapToPair(female -> new Tuple2<>(female.getInt(discriminatorColumnNumber), 1)).
+                reduceByKey((a, b) -> a + b).collectAsMap();
     }
 
     public void loadAndPrint(String file) {
         Dataset<Row> rows = getDataSetByCsv(file);
         rows.printSchema();
         rows.show(5);
-    }
-
-    private Dataset<Row> getDataSetByCsv(String accidentsFile) {
-        return spark.read()
-                .option("header", "true")
-                .option("inferSchema", "true")
-                .csv(accidentsFile);
     }
 
     public List<String> getColValue(String file, String columnName) {
@@ -196,7 +227,6 @@ public class GBCrashAnalyzerService {
         return makes.collectAsList();
     }
 
-
     public List<Integer> getIntColValue(String file, String columnName) {
         Dataset<Row> dataset = spark.read()
                 .option("header", "true")
@@ -210,6 +240,13 @@ public class GBCrashAnalyzerService {
                 .distinct()
                 .map((MapFunction<Row, Integer>) row -> row.getInt(0), intEncoder);
         return values.collectAsList();
+    }
+
+    private Dataset<Row> getDataSetByCsv(String accidentsFile) {
+        return spark.read()
+                .option("header", "true")
+                .option("inferSchema", "true")
+                .csv(accidentsFile);
     }
 
 }

@@ -6,13 +6,11 @@ import com.vaadin.event.selection.SingleSelectionListener;
 import com.vaadin.server.*;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.*;
-import org.apache.spark.sql.Row;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.highcharts.HighChart;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @SpringUI
 @Theme("valo")
@@ -33,7 +31,7 @@ public class VaadinUI extends UI {
 
         VerticalLayout vsLayout = getVSComponents();
 
-        tabSheet.addTab(new ChartsTab(gbCrashAnalyzerService, carModelsFile, vehiclesFile), "charts");
+        tabSheet.addTab(new ChartsTab(gbCrashAnalyzerService, carModelsFile, vehiclesFile, accidentsFilePath), "charts");
         tabSheet.addTab(new CrashMapComponent(gbCrashAnalyzerService, accidentsFilePath), "map");
         tabSheet.addTab(new CrashGroupMapComponent(gbCrashAnalyzerService, accidentsFilePath), "crash groups");
         tabSheet.addTab(vsLayout, "VS battle");

@@ -63,6 +63,13 @@ public class GBCrashAnalyzerServiceTest {
     }
 
     @Test
+    public void getCrashesByRoadTypeAndDriverAge() throws Exception {
+        String vehiclesFilePath = this.getClass().getClassLoader().getResource(VEHICLES_SAMPLE).getFile();
+        String accidentsFilePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
+        List crashes = crashAnalyzerService.getCrashesByRoadTypeAndDriverAge(vehiclesFilePath, accidentsFilePath);
+    }
+
+    @Test
     public void getCrashesByHourOfDay() throws Exception {
         String filePath = this.getClass().getClassLoader().getResource(ACCIDENTS_SAMPLE).getFile();
         List<CarCrash> crashes = crashAnalyzerService.getCrashesByHourOfDay(filePath, 0, 3);
