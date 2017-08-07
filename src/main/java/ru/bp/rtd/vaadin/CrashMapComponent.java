@@ -38,7 +38,6 @@ public class CrashMapComponent extends VerticalLayout {
         HorizontalLayout parametersPanel = new HorizontalLayout();
         parametersPanel.setHeightUndefined();
         parametersPanel.setDefaultComponentAlignment(Alignment.MIDDLE_LEFT);
-        parametersPanel.addComponent(new Label("time"));
         parametersPanel.setMargin(new MarginInfo(false, true));
 
 
@@ -51,6 +50,7 @@ public class CrashMapComponent extends VerticalLayout {
         ComboBox<ComboboxItem> cbSeverity = new ComboBox();
         cbSeverity.setItems(severityItems);
         cbSeverity.setItemCaptionGenerator(ComboboxItem::getName);
+        parametersPanel.addComponent(new Label("Severity: "));
         parametersPanel.addComponent(cbSeverity);
 
         Slider slider = new Slider(0, 23);
@@ -62,6 +62,8 @@ public class CrashMapComponent extends VerticalLayout {
             List<CarCrash> crashes = this.gbCrashAnalyzerService.getCrashesByHourOfDay(this.accidentsFilePath, hourValue, cbSeverity.getValue().value);
             crashes.stream().map(CrashMapComponent::createCrashMarker).forEach(crashMap::addMarker);
         });
+
+        parametersPanel.addComponent(new Label("Time: "));
         parametersPanel.addComponent(slider);
 
 

@@ -81,18 +81,18 @@ public class VaadinUI extends UI {
         verticalLayout.addComponent(horizontalLayout);
 
 
-        HorizontalLayout vsAgeOfCarHorizontalLayout = new HorizontalLayout();
-        VerticalLayout leftAgeOfCarVLayout = new VerticalLayout();
-        List<Integer> ages = gbCrashAnalyzerService.getIntColValue(carModelsFile, "Age_of_Vehicle");
-
-         Collections.sort(ages);
-        ComboBox<Integer> comboBoxLeftAgeOfCars = new ComboBox<>();
-        comboBoxLeftAgeOfCars.setItems(ages);
-
-        leftAgeOfCarVLayout.addComponent(comboBoxLeftAgeOfCars);
-        vsAgeOfCarHorizontalLayout.addComponent(leftAgeOfCarVLayout);
-
-        verticalLayout.addComponent(vsAgeOfCarHorizontalLayout);
+//        HorizontalLayout vsAgeOfCarHorizontalLayout = new HorizontalLayout();
+//        VerticalLayout leftAgeOfCarVLayout = new VerticalLayout();
+//        List<Integer> ages = gbCrashAnalyzerService.getIntColValue(carModelsFile, "Age_of_Vehicle");
+//
+//         Collections.sort(ages);
+//        ComboBox<Integer> comboBoxLeftAgeOfCars = new ComboBox<>();
+//        comboBoxLeftAgeOfCars.setItems(ages);
+//
+//        leftAgeOfCarVLayout.addComponent(comboBoxLeftAgeOfCars);
+//        vsAgeOfCarHorizontalLayout.addComponent(leftAgeOfCarVLayout);
+//
+//        verticalLayout.addComponent(vsAgeOfCarHorizontalLayout);
 
         return verticalLayout;
     }
