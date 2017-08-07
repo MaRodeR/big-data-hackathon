@@ -1,11 +1,11 @@
 package ru.bp.rtd.vaadin;
 
 import com.vaadin.ui.Button;
-import com.vaadin.ui.GridLayout;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.VerticalLayout;
 import org.apache.spark.sql.Row;
 import org.vaadin.highcharts.HighChart;
-import ru.bp.rtd.domain.RoadDriverAgeCrash;
+import ru.bp.rtd.domain.EngineCasualtiesCrash;
 import ru.bp.rtd.services.GBCrashAnalyzerService;
 
 import java.util.*;
@@ -32,11 +32,13 @@ public class ChartsTab extends VerticalLayout {
         Button button = new Button("show data");
         button.addClickListener((Button.ClickListener) event -> {
             if (!isInitialized) {
-                VerticalLayout chartsLayout = new VerticalLayout();
-                chartsLayout.addComponent(createMostDangerousCarsChart());
-                chartsLayout.addComponent(createCrashesCountByDriversAgeChart());
-                chartsLayout.addComponent(creatCrashesByRoadTypeAndDriverAgeChart());
-                ChartsTab.this.addComponent(chartsLayout);
+                HorizontalLayout chartsLayout1 = new HorizontalLayout();
+                chartsLayout1.addComponent(createMostDangerousCarsChart());
+                chartsLayout1.addComponent(createCrashesCountByDriversAgeChart());
+                ChartsTab.this.addComponent(chartsLayout1);
+                HorizontalLayout chartsLayout2 = new HorizontalLayout();
+                chartsLayout2.addComponent(createCrashesByEngineChart());
+                ChartsTab.this.addComponent(chartsLayout2);
                 isInitialized = true;
             }
         });
@@ -69,6 +71,7 @@ public class ChartsTab extends VerticalLayout {
                 "\n" +
                 "    series: [ {name: 'Make', data: [" + series + "]" +
                 "    }]};");
+        chart.setHeight("100%");
         return chart;
     }
 
@@ -102,32 +105,39 @@ public class ChartsTab extends VerticalLayout {
         return chart;
     }
 
-    private HighChart creatCrashesByRoadTypeAndDriverAgeChart() {
-        List<RoadDriverAgeCrash> crashes = gbCrashAnalyzerService.getCrashesByRoadTypeAndDriverAge(vehiclesFile, accidentsFile);
+    private HighChart createCrashesByEngineChart() {
+        List<EngineCasualtiesCrash> crashes = gbCrashAnalyzerService.getCrashesByRoadTypeAndDriverAge(carModelsFile, accidentsFile);
         HighChart chart = new HighChart();
 
-        Set<String> categories = crashes.stream().map(RoadDriverAgeCrash::getRoadType).collect(toSet());
+        List<String> categories = crashes.stream()
+                .map(EngineCasualtiesCrash::getEngineCapacity)
+                .collect(toSet()).stream()
+                .map(Integer::valueOf)
+                .sorted()
+                .map(String::valueOf)
+                .map(value -> value + "+")
+                .collect(toList());
         List<String> series = crashes.stream()
-                .map(RoadDriverAgeCrash::getAge)
+                .map(EngineCasualtiesCrash::getNumberOfCasualties)
                 .collect(Collectors.toSet())
                 .stream()
                 .sorted(Integer::compareTo)
                 .filter(value -> value > 0)
-                .map(age -> {
+                .map(casualties -> {
                     Optional<String> data = categories.stream()
                             .map(s -> crashes.stream()
-                                    .filter(crash -> crash.getAge() == age && crash.getRoadType().equals(s))
-                                    .findFirst().orElse(new RoadDriverAgeCrash().setCrashCount(0)).getCrashCount())
+                                    .filter(crash -> crash.getNumberOfCasualties() == casualties && (crash.getEngineCapacity()+"+").equals(s))
+                                    .findFirst().orElse(new EngineCasualtiesCrash().setCrashCount(0)).getCrashCount())
                             .map(Object::toString)
                             .reduce((count1, count2) -> count1 + ", " + count2);
-                    return "{ name: " + age + ", data: [" + data.get() + "]}";
+                    return "{ name: '" + casualties + "', data: [" + data.get() + "]}";
                 })
                 .collect(toList());
 
 
         chart.setHcjs("var options = {\n" +
                 "    title: {\n" +
-                "        text: 'test diagram'\n" +
+                "        text: 'Engine capacity and number of casualty'\n" +
                 "    },\n" +
                 "    series: [" + series.stream().reduce((v1, v2) -> v1 + ", " + v2).get() + "]," +
                 "    plotOptions: {\n" +

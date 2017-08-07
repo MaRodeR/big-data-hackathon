@@ -3,15 +3,13 @@ package ru.bp.rtd.services;
 
 import org.apache.spark.api.java.function.MapFunction;
 import org.apache.spark.sql.*;
-import org.apache.spark.sql.types.DataType;
-import org.apache.spark.sql.types.IntegerType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import ru.bp.rtd.domain.CarCrash;
 import ru.bp.rtd.domain.CrashGroup;
 import ru.bp.rtd.domain.Point;
-import ru.bp.rtd.domain.RoadDriverAgeCrash;
+import ru.bp.rtd.domain.EngineCasualtiesCrash;
 import ru.bp.rtd.utils.PointUtils;
 import scala.Tuple2;
 
@@ -37,6 +35,31 @@ public class GBCrashAnalyzerService {
         roadTypes.put(7, "Slip road");
         roadTypes.put(9, "Unknown");
         roadTypes.put(12, "One way street/Slip road");
+    }
+
+    private Map<Integer, String> vehicleTypes = new HashMap<>();
+
+    {
+        vehicleTypes.put(1, "Pedal cycle");
+        vehicleTypes.put(2, "Motorcycle 50cc and under");
+        vehicleTypes.put(3, "Motorcycle 125cc and under");
+        vehicleTypes.put(4, "Motorcycle over 125cc and up to 500cc");
+        vehicleTypes.put(5, "Motorcycle over 500cc");
+        vehicleTypes.put(8, "Taxi/Private hire car");
+        vehicleTypes.put(9, "Car");
+        vehicleTypes.put(10, "Minibus (8 - 16 passenger seats)");
+        vehicleTypes.put(11, "Bus or coach (17 or more pass seats)");
+        vehicleTypes.put(16, "Ridden horse");
+        vehicleTypes.put(17, "Agricultural vehicle");
+        vehicleTypes.put(18, "Tram");
+        vehicleTypes.put(19, "Van / Goods 3.5 tonnes mgw or under");
+        vehicleTypes.put(20, "Goods over 3.5t. and under 7.5t");
+        vehicleTypes.put(21, "Goods 7.5 tonnes mgw and over");
+        vehicleTypes.put(22, "Mobility scooter");
+        vehicleTypes.put(23, "Electric motorcycle");
+        vehicleTypes.put(90, "Other vehicle");
+        vehicleTypes.put(97, "Motorcycle - unknown cc");
+        vehicleTypes.put(98, "Goods vehicle - unknown weight");
     }
 
     @Autowired
@@ -72,23 +95,27 @@ public class GBCrashAnalyzerService {
     }
 
     @Cacheable("crashesByRoadTypeAndDriverAge")
-    public List<RoadDriverAgeCrash> getCrashesByRoadTypeAndDriverAge(String vehiclesFile, String accidentsFile) {
-        Dataset<Row> vehiclesDataSet = getDataSetByCsv(vehiclesFile);
+    public List<EngineCasualtiesCrash> getCrashesByRoadTypeAndDriverAge(String makeModelFile, String accidentsFile) {
+        Dataset<Row> makeModelDataSet = getDataSetByCsv(makeModelFile);
         Dataset<Row> accidentsDataSet = getDataSetByCsv(accidentsFile);
 
 
-        List<Row> rows = vehiclesDataSet.join(accidentsDataSet, "Accident_Index")
-                .filter(col("Road_Type").notEqual(-1))
-                .filter(col("Age_of_Driver").notEqual(-1))
-                .select(col("Road_Type"), col("Age_of_Driver").divide(10).cast("int").multiply(10).as("Age_of_Driver"))
-                .groupBy(col("Road_Type"), col("Age_of_Driver"))
+        List<Row> rows = makeModelDataSet.join(accidentsDataSet, "Accident_Index")
+                .filter(col("Vehicle_Type").equalTo(9))
+                .select(col("Engine_Capacity_(CC)").divide(500).cast("int").multiply(500).as("capacity"), col("Number_of_Casualties"))
+                .filter(col("capacity").lt(4000))
+                .filter(col("capacity").isNotNull())
+                .filter(col("capacity").notEqual(-1))
+                .filter(col("Number_of_Casualties").notEqual(-1))
+                .groupBy(col("capacity"), col("Number_of_Casualties"))
                 .count()
+                .filter(col("count").gt(0))
                 .collectAsList();
 
         return rows.stream()
-                .map(row -> new RoadDriverAgeCrash()
-                        .setRoadType(roadTypes.get(row.getInt(0)))
-                        .setAge(row.getInt(1))
+                .map(row -> new EngineCasualtiesCrash()
+                        .setEngineCapacity(String.valueOf(row.getInt(0)))
+                        .setNumberOfCasualties(row.getInt(1))
                         .setCrashCount(row.getLong(2)))
                 .collect(Collectors.toList());
     }
